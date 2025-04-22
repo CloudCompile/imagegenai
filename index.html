@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Image Generator & Chat</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top, #6a11cb, #2575fc);
+      color: #fff;
+      padding: 2rem;
+      margin: 0;
+      text-align: center;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      animation: fadeIn 1s ease-out;
+      text-shadow: 2px 2px #0003;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .input-group, .chat-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      animation: fadeIn 1.5s ease-out;
+    }
+    input, button, textarea {
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 1rem;
+      min-width: 200px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    input::placeholder, textarea::placeholder {
+      color: #aaa;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      width: 100%;
+      max-width: 600px;
+    }
+    button {
+      background-color: #00ff9f;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background-color: #00e58f;
+      transform: scale(1.05);
+    }
+    #imageContainer, #chatContainer {
+      margin-top: 2rem;
+      animation: fadeIn 2s ease-out;
+    }
+    img {
+      margin-top: 1rem;
+      max-width: 90%;
+      height: auto;
+      border-radius: 15px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+      animation: fadeIn 1s ease-out;
+      transition: transform 0.3s ease;
+    }
+    img:hover {
+      transform: scale(1.02);
+    }
+    #progressBar {
+      margin-top: 1rem;
+      width: 70%;
+      height: 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      margin-left: auto;
+      margin-right: auto;
+      overflow: hidden;
+      display: none;
+    }
+    #progressFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #00ff9f, #00d9c0);
+      animation: progressAnim 2s linear forwards;
+    }
+    @keyframes progressAnim {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+    .chat-log {
+      max-width: 600px;
+      margin: auto;
+      text-align: left;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .chat-log p {
+      margin: 0.5rem 0;
+      line-height: 1.4;
+    }
+    .chat-log .user { color: #0ff; }
+    .chat-log .assistant { color: #fff; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>🎨 AI Image Generator & Chat Assistant</h1>
+  <div class="input-group">
+    <input type="text" id="promptInput" placeholder="Enter your image prompt"/>
+    <input type="number" id="widthInput" placeholder="Width (optional)"/>
+    <input type="number" id="heightInput" placeholder="Height (optional)"/>
+    <input type="text" id="modelInput" placeholder="Model (e.g. flux, revAnimated)"/>
+    <button onclick="handleGenerate()">🚀 Generate</button>
+  </div>
+  <div id="progressBar">
+    <div id="progressFill"></div>
+  </div>
+  <div id="imageContainer"></div>
+
+  <div class="chat-group">
+    <textarea id="chatInput" placeholder="Ask me anything... from math to memes."></textarea>
+    <button onclick="handleChat()">💬 Send</button>
+  </div>
+  <div id="chatContainer" class="chat-log"></div>
+
+  <script>
+    async function fetchImage(prompt, params = {}) {
+      const progressBar = document.getElementById("progressBar");
+      const progressFill = document.getElementById("progressFill");
+
+      progressBar.style.display = "block";
+      progressFill.style.width = "0%";
+      progressFill.style.animation = "progressAnim 2s linear forwards";
+
+      params.nologo = true;
+      const queryParams = new URLSearchParams(params);
+      const encodedPrompt = encodeURIComponent(prompt);
+      const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${queryParams.toString()}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+
+        const img = new Image();
+        img.src = imageUrl;
+        img.alt = prompt;
+
+        const downloadLink = document.createElement("a");
+        downloadLink.href = imageUrl;
+        downloadLink.download = `${prompt.replace(/\s+/g, '_')}.png`;
+        downloadLink.textContent = "📥 Download Image";
+        Object.assign(downloadLink.style, {
+          display: "inline-block", marginTop: "1rem",
+          backgroundColor: "#fff", color: "#000",
+          padding: "0.5rem 1rem", borderRadius: "8px",
+          textDecoration: "none", boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+        });
+
+        const container = document.getElementById("imageContainer");
+        container.innerHTML = "";
+        container.appendChild(img);
+        container.appendChild(downloadLink);
+      } catch (err) {
+        alert("❌ Failed to fetch image.");
+        console.error(err);
+      } finally {
+        progressBar.style.display = "none";
+      }
+    }
+
+    function handleGenerate() {
+      const prompt = document.getElementById("promptInput").value.trim();
+      const width = document.getElementById("widthInput").value;
+      const height = document.getElementById("heightInput").value;
+      const model = document.getElementById("modelInput").value;
+
+      if (!prompt) return alert("⚠️ Please enter a prompt!");
+      const params = {};
+      if (width) params.width = width;
+      if (height) params.height = height;
+      if (model) params.model = model;
+
+      fetchImage(prompt, params);
+    }
+
+    async function postChatCompletion(messages, options = {}) {
+      const url = "https://text.pollinations.ai/openai";
+      const payload = {
+        model: options.model || "openai",
+        messages,
+        seed: options.seed,
+        private: options.private,
+        referrer: options.referrer || "WebApp"
+      };
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Chat request failed.");
+      }
+    }
+
+    let chatHistory = [{ role: "system", content: "You are a helpful assistant." }];
+
+    async function handleChat() {
+      const input = document.getElementById("chatInput").value.trim();
+      if (!input) return;
+
+      const chatBox = document.getElementById("chatContainer");
+      chatHistory.push({ role: "user", content: input });
+
+      const userEntry = document.createElement("p");
+      userEntry.innerHTML = `<span class='user'><strong>User:</strong></span> ${input}`;
+      chatBox.appendChild(userEntry);
+      document.getElementById("chatInput").value = "";
+
+      const result = await postChatCompletion(chatHistory, { model: "mistral", seed: 500 });
+      if (result?.choices?.[0]?.message) {
+        const replyText = result.choices[0].message.content;
+        chatHistory.push({ role: "assistant", content: replyText });
+
+        const assistantEntry = document.createElement("p");
+        assistantEntry.innerHTML = `<span class='assistant'><strong>Assistant:</strong></span> ${replyText}`;
+        chatBox.appendChild(assistantEntry);
+      }
+    }
+  </script>
+</body>
+</html>
