@@ -3,331 +3,306 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Image Generator & Chat</title>
+  <title>AI Chat + Image Bot</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: radial-gradient(circle at top, #6a11cb, #2575fc);
-      color: #fff;
+      font-family: sans-serif;
+      background: #f0f0f0;
       margin: 0;
-      padding: 2rem 1rem;
-      text-align: center;
-      transition: background 0.3s ease;
+      display: flex;
+      height: 100vh;
     }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      text-shadow: 2px 2px #0003;
-      animation: fadeIn 1s ease-out;
-    }
-
-    .section {
-      animation: fadeIn 1.5s ease-out;
-      margin-bottom: 2rem;
-    }
-
-    input, button, textarea {
-      padding: 0.7rem;
-      border-radius: 10px;
-      border: none;
-      font-size: 1rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      margin: 0.25rem;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-      width: 100%;
-      max-width: 600px;
-    }
-
-    button {
-      background-color: #00ff9f;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
-    }
-
-    button:disabled {
-      background-color: #aaa;
-      cursor: wait;
-    }
-
-    button:hover:enabled {
-      background-color: #00e58f;
-      transform: scale(1.05);
-    }
-
-    #progressBar {
-      display: none;
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       width: 70%;
-      height: 10px;
-      margin: 1rem auto;
-      background: rgba(255,255,255,0.3);
-      border-radius: 5px;
-      overflow: hidden;
+      padding: 20px;
     }
-
-    #progressFill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(to right, #00ff9f, #00d9c0);
-      animation: progressAnim 2s linear forwards;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes progressAnim {
-      from { width: 0%; }
-      to { width: 100%; }
-    }
-
-    #imageContainer img {
-      max-width: 90%;
-      border-radius: 15px;
-      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-      margin-top: 1rem;
-      transition: transform 0.3s ease;
-    }
-
-    #imageContainer img:hover {
-      transform: scale(1.02);
-    }
-
-    #chatContainer {
-      margin: auto;
-      text-align: left;
-      max-width: 600px;
-      background: rgba(255,255,255,0.1);
-      padding: 1rem;
-      border-radius: 10px;
-      max-height: 300px;
+    #chat {
+      flex: 1;
       overflow-y: auto;
-    }
-
-    .chat-msg {
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      border-radius: 10px;
-    }
-
-    .chat-msg.user {
-      background-color: rgba(0, 255, 255, 0.2);
-      color: #0ff;
-    }
-
-    .chat-msg.assistant {
-      background-color: rgba(255,255,255,0.15);
-      font-style: italic;
-    }
-
-    a.download-link {
-      display: inline-block;
-      margin-top: 1rem;
-      background-color: #fff;
-      color: #000;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
-    .input-row {
+      background: #fff;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
     }
-
-    .input-row input {
-      flex: 1 1 150px;
-      min-width: 120px;
+    .msg {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 75%;
+      white-space: pre-wrap;
     }
-
-    .theme-toggle {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background-color: #fff;
-      color: #000;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
+    .user { background: #d0f0ff; align-self: flex-end; }
+    .bot { background: #e0e0e0; align-self: flex-start; position: relative; }
+    .typing-dots {
+      display: inline-block;
+    }
+    .typing-dots span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin: 0 1px;
+      background: #888;
+      border-radius: 50%;
+      animation: bounce 1.3s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    #inputBar {
+      display: flex;
+      padding: 10px;
+      background: #ddd;
+    }
+    #inputBar input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #inputBar button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0066cc;
+      color: white;
+      border: none;
       cursor: pointer;
     }
-
-    .image-gallery {
-      margin-top: 2rem;
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
+    #sidebar {
+      width: 30%;
+      background: #fff;
+      padding: 20px;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
     }
-
-    .image-gallery img {
-      margin: 0.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    #sidebar img {
+      max-width: 100%;
+      margin-bottom: 10px;
+    }
+    #sidebar button {
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 5px;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>🎨 AI Image Generator & Chat Assistant</h1>
-
-  <!-- Theme Toggle -->
-  <div class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Dark/Light Mode</div>
-
-  <div class="section">
-    <div class="input-row">
-      <input type="text" id="promptInput" placeholder="Image prompt" />
-      <input type="number" id="widthInput" placeholder="Width" />
-      <input type="number" id="heightInput" placeholder="Height" />
-      <input type="text" id="modelInput" placeholder="Model (optional)" />
-      <button id="generateBtn" onclick="handleGenerate()">🚀 Generate</button>
+  <div id="chat-container">
+    <div id="chat"></div>
+    <div id="inputBar">
+      <input id="messageInput" type="text" placeholder="Ask me something..." />
+      <button onclick="sendMessage()">Send</button>
     </div>
-    <div id="progressBar"><div id="progressFill"></div></div>
-    <div id="imageContainer"></div>
   </div>
-
-  <div class="section">
-    <textarea id="chatInput" placeholder="Ask the assistant anything..."></textarea><br>
-    <button id="chatBtn" onclick="handleChat()">💬 Send</button>
-    <div id="chatContainer"></div>
+  <div id="sidebar">
+    <h3>Your Image Library</h3>
+    <div id="imageLibrary"></div>
+    <button onclick="toggleSidebar()">Close Library</button>
   </div>
-
-  <div class="image-gallery" id="imageGallery"></div>
 
   <script>
-    let isDarkMode = false;
-    const imageContainer = document.getElementById("imageContainer");
-    const chatContainer = document.getElementById("chatContainer");
-    const generateBtn = document.getElementById("generateBtn");
-    const chatBtn = document.getElementById("chatBtn");
-    const progressBar = document.getElementById("progressBar");
-    const progressFill = document.getElementById("progressFill");
-    const imageGallery = document.getElementById("imageGallery");
+    const chatDiv = document.getElementById("chat");
+    const input = document.getElementById("messageInput");
+    const imageLibraryDiv = document.getElementById("imageLibrary");
+    const sidebar = document.getElementById("sidebar");
+    let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+    let savedImages = JSON.parse(localStorage.getItem("savedImages") || "[]");
 
-    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [
-      { role: "system", content: "You are a helpful assistant." }
-    ];
+    function renderHistory() {
+      chatDiv.innerHTML = "";
+      chatHistory.forEach(({ sender, content }) => addMessage(content, sender));
+    }
 
-    async function handleGenerate() {
-      const prompt = promptInput.value.trim();
-      const width = widthInput.value;
-      const height = heightInput.value;
-      const model = modelInput.value;
+    function renderSavedImages() {
+      imageLibraryDiv.innerHTML = "";
+      savedImages.forEach((imageUrl, index) => {
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = `Saved image ${index + 1}`;
+        img.onclick = () => switchToSavedImage(imageUrl);
+        imageLibraryDiv.appendChild(img);
+      });
+    }
 
-      if (!prompt) {
-        alert("⚠️ Enter an image prompt first!");
+    function addMessage(content, sender, isTyping = false) {
+      const msg = document.createElement("div");
+      msg.className = `msg ${sender}`;
+      if (isTyping) {
+        msg.innerHTML = `<div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>`;
+      } else {
+        msg.textContent = content;
+      }
+      chatDiv.appendChild(msg);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      return msg;
+    }
+
+    function saveToHistory(content, sender) {
+      chatHistory.push({ sender, content });
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function saveImageToLibrary(imageUrl) {
+      savedImages.push(imageUrl);
+      localStorage.setItem("savedImages", JSON.stringify(savedImages));
+      renderSavedImages();
+    }
+
+    async function fetchImage(prompt, params = {}) {
+      const defaultParams = {};
+      const queryParams = new URLSearchParams({ ...defaultParams, ...params });
+      const encodedPrompt = encodeURIComponent(prompt);
+      const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${queryParams.toString()}`;
+
+      try {
+        const loadingMsg = addMessage("Generating image... ⏳", "bot", true);
+        const response = await fetch(url);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = prompt;
+        img.style.maxWidth = "100%";
+        img.style.borderRadius = "10px";
+        img.style.marginTop = "10px";
+
+        loadingMsg.textContent = `Here's your picture of: "${prompt}"`;
+        loadingMsg.appendChild(img);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+
+        saveToHistory(`Here's your picture of: "${prompt}"`, "bot");
+        saveImageToLibrary(imageUrl);
+      } catch (error) {
+        console.error("Error fetching image:", error);
+        addMessage("Oops! Couldn't fetch that image.", "bot");
+      }
+    }
+
+    async function sendMessage() {
+      const userMsg = input.value.trim();
+      if (!userMsg) return;
+
+      addMessage(userMsg, "user");
+      saveToHistory(userMsg, "user");
+      input.value = "";
+
+      if (userMsg.toLowerCase().startsWith("make me a picture of")) {
+        const prompt = userMsg.slice("make me a picture of".length).trim();
+        await fetchImage(prompt, { width: 768, height: 768 });
         return;
       }
 
-      const params = { nologo: true };
-      if (width) params.width = width;
-      if (height) params.height = height;
-      if (model) params.model = model;
+      const typingBubble = addMessage("", "bot", true);
+      const messages = [...chatHistory, { role: "user", content: userMsg }].map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.content
+      }));
 
-      generateBtn.disabled = true;
-      progressBar.style.display = "block";
-      progressFill.style.width = "0%";
-      progressFill.style.animation = "progressAnim 2s linear forwards";
+      let botContent = "";
+      const updateBubble = () => {
+        typingBubble.classList.remove("typing-dots");
+        typingBubble.innerHTML = "";
+        typingBubble.textContent = botContent;
+      };
 
-      try {
-        const encodedPrompt = encodeURIComponent(prompt);
-        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${new URLSearchParams(params)}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Status: ${response.status}`);
-
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-
-        const img = new Image();
-        img.src = imageUrl;
-        img.alt = prompt;
-
-        const link = document.createElement("a");
-        link.href = imageUrl;
-        link.download = `${prompt.replace(/\s+/g, '_')}.png`;
-        link.textContent = "📥 Download Image";
-        link.className = "download-link";
-
-        imageContainer.innerHTML = "";
-        imageContainer.appendChild(img);
-        imageContainer.appendChild(link);
-
-        // Add to gallery
-        addToImageGallery(img.src);
-      } catch (err) {
-        console.error(err);
-        alert("❌ Could not generate image.");
-      } finally {
-        progressBar.style.display = "none";
-        generateBtn.disabled = false;
-      }
-    }
-
-    function addToImageGallery(imageSrc) {
-      const img = document.createElement("img");
-      img.src = imageSrc;
-      img.alt = "Generated Image";
-      img.width = 100;
-      img.height = 100;
-      img.onclick = () => window.open(imageSrc);
-      imageGallery.appendChild(img);
-    }
-
-    async function handleChat() {
-      const input = chatInput.value.trim();
-      if (!input) return;
-
-      chatBtn.disabled = true;
-      appendChat("user", input);
-      chatHistory.push({ role: "user", content: input });
-      chatInput.value = "";
-
-      try {
-        const res = await fetch("https://text.pollinations.ai/openai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "mistral", messages: chatHistory, seed: 500, referrer: "WebApp" }),
-        });
-        const data = await res.json();
-        const msg = data?.choices?.[0]?.message?.content;
-        if (msg) {
-          appendChat("assistant", msg);
-          chatHistory.push({ role: "assistant", content: msg });
+      await streamChatCompletion(messages, {}, (chunk) => {
+        if (typingBubble.querySelector(".typing-dots")) {
+          updateBubble();
         }
-      } catch (err) {
-        console.error(err);
-        alert("❌ Chat failed.");
-      } finally {
-        chatBtn.disabled = false;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        saveChatHistory();
+        botContent += chunk;
+        typingBubble.textContent = botContent;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      });
+
+      saveToHistory(botContent, "bot");
+    }
+
+    async function streamChatCompletion(messages, options = {}, onChunkReceived) {
+      const url = "https://text.pollinations.ai/openai";
+      const payload = {
+        model: options.model || "openai",
+        messages: messages,
+        seed: options.seed,
+        stream: true,
+      };
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const dataStr = line.substring(6).trim();
+              if (dataStr === "[DONE]") return;
+              try {
+                const chunk = JSON.parse(dataStr);
+                const content = chunk?.choices?.[0]?.delta?.content;
+                if (content && onChunkReceived) onChunkReceived(content);
+              } catch (e) {
+                console.error("Parse error:", dataStr, e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Streaming error:", error);
       }
     }
 
-    function appendChat(role, message) {
-      const p = document.createElement("div");
-      p.className = `chat-msg ${role}`;
-      p.innerHTML = `<strong>${role === "user" ? "You" : "Assistant"}:</strong> ${message}`;
-      chatContainer.appendChild(p);
+    function toggleSidebar() {
+      sidebar.style.display = sidebar.style.display === "flex" ? "none" : "flex";
     }
 
-    function saveChatHistory() {
-      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    function switchToSavedImage(imageUrl) {
+      addMessage("Switching to saved image...", "bot");
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.alt = "Saved image";
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "10px";
+      img.style.marginTop = "10px";
+      addMessage("", "bot").appendChild(img);
     }
 
-    function toggleTheme() {
-      isDarkMode = !isDarkMode;
-      document.body.style.background = isDarkMode
-        ? 'radial-gradient(circle at top, #111, #333)'
-        : 'radial-gradient(circle at top, #6a11cb, #2575fc)';
-    }
+    renderHistory();
+    renderSavedImages();
   </script>
 </body>
 </html>
-
